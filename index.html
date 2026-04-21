@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pendaftaran Saruma Roadrace 2026</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Inter:wght@400;600&display=swap');
+        
+        .font-racing { font-family: 'Orbitron', sans-serif; }
+        body { font-family: 'Inter', sans-serif; background-color: #0f172a; color: white; }
+        
+        .glass-card {
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        #pdf-template {
+            width: 210mm;
+            min-height: 297mm;
+            padding: 15mm;
+            background: white;
+            color: black;
+            position: absolute;
+            left: -9999px; /* Sembunyikan dari tampilan tapi biarkan renderable */
+        }
+        
+        .pdf-table td, .pdf-table th {
+            border: 1px solid black;
+            padding: 4px;
+            font-size: 10px;
+        }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+
+    <div class="max-w-4xl mx-auto">
+        <!-- Header -->
+        <div class="text-center mb-10">
+            <h1 class="text-3xl md:text-5xl font-racing font-bold text-green-500 italic mb-2">SARUMA ROADRACE</h1>
+            <p class="text-xl text-gray-400">CHAMPIONSHIP SERIES 2026</p>
+            <div class="h-1 w-32 bg-green-500 mx-auto mt-4 rounded-full"></div>
+        </div>
+
+        <form id="registrationForm" class="space-y-8">
+            <!-- Informasi Pribadi -->
+            <div class="glass-card p-6 rounded-2xl">
+                <h2 class="text-xl font-bold mb-6 flex items-center gap-2">
+                    <span class="bg-green-500 w-2 h-6 rounded-full"></span> Data Pembalap
+                </h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-400 mb-2">Nama Sesuai KTA</label>
+                        <input type="text" name="nama" required class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-green-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-400 mb-2">Team / Klub</label>
+                        <input type="text" name="team" required class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-green-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-400 mb-2">Tempat / Tgl Lahir</label>
+                        <input type="text" name="ttl" placeholder="Contoh: Labuha, 01-01-2000" required class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-green-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-400 mb-2">No. KTA / KISS Aktif</label>
+                        <input type="text" name="kta" required class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-green-500">
+                    </div>
+                    <div class="md:col-span-2">
+                        <label class="block text-sm font-medium text-gray-400 mb-2">Alamat Asal</label>
+                        <textarea name="alamat" required rows="2" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-green-500"></textarea>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Pemilihan Kelas -->
+            <div class="glass-card p-6 rounded-2xl">
+                <h2 class="text-xl font-bold mb-6 flex items-center gap-2">
+                    <span class="bg-green-500 w-2 h-6 rounded-full"></span> Pilih Kelas & Detail Motor
+                </h2>
+                
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-sm">
+                        <thead class="bg-slate-800 text-gray-300">
+                            <tr>
+                                <th class="p-3 rounded-l-lg">Pilih</th>
+                                <th class="p-3">Nama Kelas</th>
+                                <th class="p-3">No. Rangka</th>
+                                <th class="p-3">No. Mesin</th>
+                                <th class="p-3 rounded-r-lg">Merk/Type</th>
+                            </tr>
+                        </thead>
+                        <tbody id="classContainer" class="divide-y divide-slate-700">
+                            <!-- JS akan mengisi ini -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Footer Pendaftaran -->
+            <div class="glass-card p-6 rounded-2xl bg-gradient-to-br from-slate-800 to-slate-900">
+                <div class="flex flex-col md:flex-row justify-between items-center gap-6">
+                    <div class="text-sm text-gray-400 max-w-md italic">
+                        "Dengan menekan daftar, saya menyetujui semua peraturan balap motor dan melepaskan semua tuntutan kepada penyelenggara."
+                    </div>
+                    <button type="submit" id="submitBtn" class="w-full md:w-auto bg-green-600 hover:bg-green-500 text-white font-bold py-4 px-10 rounded-xl transition-all transform hover:scale-105 flex items-center justify-center gap-2">
+                        <span id="btnText">DAFTAR & CETAK FORMULIR</span>
+                        <div id="loader" class="hidden animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent"></div>
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <!-- PDF TEMPLATE (HIDDEN) -->
+    <div id="pdf-template" class="text-[12px]">
+        <div class="flex justify-between items-center mb-4">
+            <div class="w-24 h-24 bg-gray-200 flex items-center justify-center border border-black">LOGO</div>
+            <div class="text-center flex-1">
+                <h1 class="text-xl font-bold">SARUMA ROADRACE CHAMPIONSHIP SERIES 2026</h1>
+                <h2 class="text-lg font-bold border-y border-black inline-block px-4 my-1">FORMULIR PENDAFTARAN</h2>
+            </div>
+            <div class="w-24 border-2 border-black p-2 text-center">
+                <p class="text-[10px]">NO. START</p>
+                <div class="text-xl font-bold py-2" id="pdf-no-start">-</div>
+            </div>
+        </div>
+
+        <div class="space-y-1 mb-4">
+            <div class="flex"><span class="w-48">NAMA SESUAI KTA</span>: <span id="pdf-nama" class="font-bold border-b border-dotted border-black flex-1 ml-2"></span></div>
+            <div class="flex"><span class="w-48">TEAM/KLUB</span>: <span id="pdf-team" class="font-bold border-b border-dotted border-black flex-1 ml-2"></span></div>
+            <div class="flex"><span class="w-48">TEMPAT/TGL LAHIR</span>: <span id="pdf-ttl" class="font-bold border-b border-dotted border-black flex-1 ml-2"></span></div>
+            <div class="flex"><span class="w-48">NO. KTA/KISS AKTIF</span>: <span id="pdf-kta" class="font-bold border-b border-dotted border-black flex-1 ml-2"></span></div>
+            <div class="flex"><span class="w-48">ALAMAT ASAL</span>: <span id="pdf-alamat" class="font-bold border-b border-dotted border-black flex-1 ml-2"></span></div>
+        </div>
+
+        <table class="w-full pdf-table mb-4">
+            <thead>
+                <tr class="bg-gray-100">
+                    <th class="w-8">NO</th>
+                    <th>KELAS BALAP</th>
+                    <th class="w-32">NO. RANGKA</th>
+                    <th class="w-32">NO. MESIN</th>
+                    <th class="w-32">MERK/TYPE</th>
+                </tr>
+            </thead>
+            <tbody id="pdf-table-body"></tbody>
+        </table>
+
+        <div class="grid grid-cols-2 gap-8 text-[10px] mb-4">
+            <div>
+                <p class="font-bold mb-1 italic">Pernyataan:</p>
+                <p class="text-justify leading-tight">Dengan mengisi formulir pendaftaran ini maka saya menyatakan meyetujui & menerima semua pasal yang tercantum dalam peraturan balap motor, dan melepaskan semua tuntutan kepada penyelenggara Klub, serta PP IMI dan Pengprov IMI Malut atas seluruh akibat yang timbul pada diri saya.</p>
+                <div class="mt-4">
+                    <p>Labuha, April 2026</p>
+                    <div class="h-16"></div>
+                    <p>( ..................................................... )</p>
+                    <p class="italic">Tanda Tangan Peserta</p>
+                </div>
+            </div>
+            <div class="border border-black p-2 bg-gray-50">
+                <p class="font-bold border-b border-black mb-2">KWITANSI PENDAFTARAN</p>
+                <p>Telah terima dari: <span id="pdf-kw-nama"></span></p>
+                <p>Uang Sejumlah: <span id="pdf-kw-uang"></span></p>
+                <p>Untuk Pembayaran: Kelas <span id="pdf-kw-kelas"></span></p>
+                <div class="flex justify-between mt-4">
+                    <div class="border-2 border-black px-4 py-1 font-bold">Rp. <span id="pdf-total"></span></div>
+                    <div class="text-right italic">Panitia Saruma 2026</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="text-[9px] text-gray-500 border-t pt-2">
+            *Biaya Adm: Rp 25.000 | Asuransi: Rp 50.000 | Rokok: Rp 50.000
+        </div>
+    </div>
+
+    <script>
+        const CLOUD_SCRIPT_URL = ''; // https://script.google.com/macros/s/AKfycbwW5n9F9KNM6xJLQGHW0APF-JSzkpbzWopyfUeJCGLjbzWLclcpZ8MGBWiRfQpj6i4krg/exec
+
+        const categories = [
+            { group: "KELAS OPEN (POINT)", classes: ["A. BEBEK 4T 150CC (EXPERT)", "B. BEBEK 4T 150CC (NOVICE)", "C. BEBEK 4T 150CC (ROOKIE)", "D. BEBEK 2T 125CC", "E. BEBEK 4T 130 EX MP2", "F. MATIC STANDART 131CC (MP5)"] },
+            { group: "KELAS WILAYAH (MALUKU, PAPUA)", classes: ["G. BEBEK 4T 150CC (EXPERT)", "H. BEBEK 4T 150CC (NOVICE)", "I. BEBEK 4T 150CC (ROOKIE)", "J. BEBEK 2T 125CC", "K. BEBEK 4T 130 EX MP2", "L. MATIC STANDART 131CC (MP5)"] },
+            { group: "SUPPORTING KELAS", classes: ["M. SPORT STANDART 2T 135CC", "N. SPORT 140CC TU", "O. SUPERMOTO 150CC STANDART", "P. BEBEK 4T 150CC MAX ROOKIE"] },
+            { group: "LOKAL HALMAHERA SELATAN", classes: ["R. BEBEK 2T 116CC (POINT)", "S. BEBEK 4T 130CC (EX MP6)", "T. MATIC STANDART 131CC (MP5)", "U. SPORT 2T STANDART 135CC"] },
+            { group: "KELAS EX-RIDER 35+", classes: ["W. BEBEK STANDART 116CC 2T", "V. BEBEK STANDART 125CC 2T", "X. SPORT STANDART 135CC"] }
+        ];
+
+        // Render Form
+        const container = document.getElementById('classContainer');
+        categories.forEach(cat => {
+            const groupRow = document.createElement('tr');
+            groupRow.className = 'bg-slate-900/50';
+            groupRow.innerHTML = `<td colspan="5" class="p-3 font-bold text-green-400 text-xs tracking-wider">${cat.group}</td>`;
+            container.appendChild(groupRow);
+
+            cat.classes.forEach((cls, idx) => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td class="p-3"><input type="checkbox" name="classSelect" value="${cls}" class="w-5 h-5 rounded accent-green-500"></td>
+                    <td class="p-3 text-xs">${cls}</td>
+                    <td class="p-3"><input type="text" name="rangka_${cls}" placeholder="..." class="bg-slate-800 text-xs p-1 rounded border border-slate-700 w-full"></td>
+                    <td class="p-3"><input type="text" name="mesin_${cls}" placeholder="..." class="bg-slate-800 text-xs p-1 rounded border border-slate-700 w-full"></td>
+                    <td class="p-3"><input type="text" name="merk_${cls}" placeholder="..." class="bg-slate-800 text-xs p-1 rounded border border-slate-700 w-full"></td>
+                `;
+                container.appendChild(tr);
+            });
+        });
+
+        const form = document.getElementById('registrationForm');
+        form.onsubmit = async (e) => {
+            e.preventDefault();
+            
+            const btn = document.getElementById('submitBtn');
+            const loader = document.getElementById('loader');
+            const btnText = document.getElementById('btnText');
+            
+            const selectedClasses = Array.from(document.querySelectorAll('input[name="classSelect"]:checked'));
+            
+            if (selectedClasses.length === 0) {
+                alert("Harap pilih minimal satu kelas balap!");
+                return;
+            }
+
+            btn.disabled = true;
+            loader.classList.remove('hidden');
+            btnText.innerText = "MEMPROSES...";
+
+            const formData = new FormData(form);
+            const data = {
+                timestamp: new Date().toISOString(),
+                nama: formData.get('nama'),
+                team: formData.get('team'),
+                ttl: formData.get('ttl'),
+                kta: formData.get('kta'),
+                alamat: formData.get('alamat'),
+                classes: selectedClasses.map(cb => {
+                    const cls = cb.value;
+                    return {
+                        namaKelas: cls,
+                        rangka: formData.get(`rangka_${cls}`),
+                        mesin: formData.get(`mesin_${cls}`),
+                        merk: formData.get(`merk_${cls}`)
+                    };
+                })
+            };
+
+            // 1. Simpan ke Google Sheets (Opsional jika URL tersedia)
+            if (CLOUD_SCRIPT_URL) {
+                try {
+                    await fetch(CLOUD_SCRIPT_URL, {
+                        method: 'POST',
+                        mode: 'no-cors',
+                        body: JSON.stringify(data)
+                    });
+                } catch (err) {
+                    console.error("Gagal simpan ke cloud", err);
+                }
+            }
+
+            // 2. Siapkan PDF Template
+            document.getElementById('pdf-nama').innerText = data.nama;
+            document.getElementById('pdf-team').innerText = data.team;
+            document.getElementById('pdf-ttl').innerText = data.ttl;
+            document.getElementById('pdf-kta').innerText = data.kta;
+            document.getElementById('pdf-alamat').innerText = data.alamat;
+            document.getElementById('pdf-kw-nama').innerText = data.nama;
+            
+            const tableBody = document.getElementById('pdf-table-body');
+            tableBody.innerHTML = '';
+            let totalBiaya = 25000 + 50000 + 50000; // Sesuai file: Adm + Asuransi + Rokok
+            
+            data.classes.forEach((c, i) => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td class="text-center">${i+1}</td>
+                    <td>${c.namaKelas}</td>
+                    <td>${c.rangka || '-'}</td>
+                    <td>${c.mesin || '-'}</td>
+                    <td>${c.merk || '-'}</td>
+                `;
+                tableBody.appendChild(tr);
+            });
+
+            document.getElementById('pdf-total').innerText = totalBiaya.toLocaleString('id-ID');
+            document.getElementById('pdf-kw-uang').innerText = `Seratus Dua Puluh Lima Ribu Rupiah`;
+            document.getElementById('pdf-kw-kelas').innerText = data.classes.map(c => c.namaKelas.split('.')[0]).join(', ');
+
+            // 3. Generate PDF
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF('p', 'mm', 'a4');
+            const template = document.getElementById('pdf-template');
+            
+            html2canvas(template, { scale: 3 }).then(canvas => {
+                const imgData = canvas.toDataURL('image/png');
+                doc.addImage(imgData, 'PNG', 0, 0, 210, 297);
+                doc.save(`Formulir_Saruma2026_${data.nama.replace(/\s/g, '_')}.pdf`);
+                
+                btn.disabled = false;
+                loader.classList.add('hidden');
+                btnText.innerText = "BERHASIL DIKIRIM!";
+                setTimeout(() => btnText.innerText = "DAFTAR & CETAK FORMULIR", 3000);
+                form.reset();
+            });
+        };
+    </script>
+</body>
+</html>
